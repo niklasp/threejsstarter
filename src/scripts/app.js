@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 
 import { monitorScroll, loadModels } from './util';
 
 //import shaders
 import vertexShader from '../shaders/vertex.glsl';
 import fragmentShader from '../shaders/fragment.glsl';
+import shiftShader from '../shaders/shiftShader.glsl';
 
 //import your models
 import model from '../models/model.glb';
@@ -40,10 +44,16 @@ export default class Sketch {
     this.renderer.setClearColor(0xeeeeee, 1);
     this.container.appendChild( this.renderer.domElement );
 
+    this.composer = new EffectComposer( this.renderer );
+    const renderPass = new RenderPass( this.scene, this.camera );
+    this.composer.addPass( renderPass );
+    this.composer.setSize ( this.width, this.height );
+
     this.controls = new OrbitControls( this.camera, this.renderer.domElement );
 
     this.setupListeners();
     this.addObjects();
+    this.addComposerPass();
     this.render();
     this.resize();
   }
@@ -59,8 +69,22 @@ export default class Sketch {
     this.width = this.container.offsetWidth;
     this.height = this.container.offsetHeight;
     this.renderer.setSize( this.width, this.height );
+    this.composer.setSize( this.width, this.height );
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
+  }
+
+  addComposerPass() {
+    this.shader = {
+      uniforms: {
+        u_time: { value: 0.0 },
+        tDiffuse: { value: null },
+      },
+      vertexShader,
+      fragmentShader: shiftShader,
+    };
+    this.shaderPass = new ShaderPass( this.shader );
+    this.composer.addPass( this.shaderPass );
   }
 
   addObjects() {
@@ -100,8 +124,10 @@ export default class Sketch {
     this.material.uniforms.u_time.value = this.time;
     // this.mesh.rotation.x = this.time / 20;
     // this.mesh.rotation.y = this.time / 10;
-
-    this.renderer.render( this.scene, this.camera );
+    if ( this.shaderPass ) {
+      this.shaderPass.uniforms.u_time.value = this.time;
+    }
+    this.composer.render();
     window.requestAnimationFrame( this.render.bind( this ) );
   }
 }
