@@ -4,7 +4,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 
-import { monitorScroll, loadModels } from './util';
+import { monitorScroll, loadModels, MouseTools } from './util';
 
 //import shaders
 import vertexShader from '../shaders/vertex.glsl';
@@ -26,6 +26,8 @@ export default class Sketch {
     const fov = 40;
     const near = 0.01;
     const far = 100;
+
+    this.mouseTools = new MouseTools( this.container );
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( fov, this.width / this.height, near, far );
@@ -122,6 +124,7 @@ export default class Sketch {
   render() {
     this.time += 0.05;
     this.material.uniforms.u_time.value = this.time;
+    this.mouseTools.update();
     // this.mesh.rotation.x = this.time / 20;
     // this.mesh.rotation.y = this.time / 10;
     if ( this.shaderPass ) {
